@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survey Research Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .page {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .active {
+            display: block;
+        }
+
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 20px 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .radio-group {
+            margin: 10px 0;
+        }
+
+        .radio-group label {
+            font-weight: normal;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+
+        .likert-scale {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+
+        .likert-option {
+            text-align: center;
+        }
+
+        .timer {
+            text-align: center;
+            font-size: 20px;
+            color: red;
+            margin: 10px 0;
+        }
+
+        .error {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Page -->
+    <div class="page active" id="welcome">
+        <h1>Survey Research Form</h1>
+        <h2>Confidence on decision under stress situation</h2>
+        <p>This survey takes 15 to 20 minutes. We ensure that your personal information and data will be kept confidential.</p>
+        <div class="checkbox-group">
+            <input type="checkbox" id="consent" required>
+            <label for="consent">I agree with the terms and conditions*</label>
+        </div>
+        <div class="error" id="consent-error">Please agree to the terms before proceeding</div>
+        <button onclick="validateConsent()">Next</button>
+    </div>
+
+    <!-- Demographics Page -->
+    <div class="page" id="demographics">
+        <h2>Demographics</h2>
+        <div class="form-group">
+            <label for="name">Name:*</label>
+            <input type="text" id="name" required>
+            <div class="error" id="name-error"></div>
+        </div>
+        <div class="form-group">
+            <label for="age">Age:*</label>
+            <input type="number" id="age" required>
+            <div class="error" id="age-error"></div>
+        </div>
+        <div class="form-group">
+            <label for="gender">Gender:*</label>
+            <select id="gender" required>
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="bisexual">Bisexual</option>
+                <option value="gay">Gay</option>
+                <option value="transgender">Transgender</option>
+            </select>
+            <div class="error" id="gender-error"></div>
+        </div>
+        <button onclick="validateAndNextDemographics()">Next</button>
+    </div>
+
+    <!-- Instructions Page -->
+    <div class="page" id="instructions">
+        <h2>Instructions for Participants</h2>
+        <p>This survey contains 14 questions divided into two categories:</p>
+        <ul>
+            <li>Task 1: 7 questions (no time limit)</li>
+            <li>Task 2: 7 questions (time limit of 30 seconds each)</li>
+        </ul>
+        <p>For Task 1, you have unlimited time to make decisions.</p>
+        <p>For Task 2, you must decide within 30 seconds. Once the time is up, the next question will appear automatically.</p>
+        <p>After each question, rate your confidence using this scale:</p>
+        <ol>
+            <li>Least Confidence</li>
+            <li>Slightly Confident</li>
+            <li>Moderately Confident</li>
+            <li>Significantly Confident</li>
+            <li>Fully Confident</li>
+        </ol>
+        <button onclick="startSurvey()">Start</button>
+    </div>
+
+    <!-- Question Template -->
+    <div class="page" id="question-template">
+        <div id="timer" class="timer"></div>
+        <h2 id="task-header"></h2>
+        <h3 id="question-number"></h3>
+        <p id="question-text"></p>
+        <div class="radio-group" id="options"></div>
+        <div class="error" id="question-error">Please select an answer</div>
+        <button onclick="handleNextQuestion()" id="next-button" disabled>Next</button>
+    </div>
+
+    <!-- Likert Scale Template -->
+    <div class="page" id="likert-template">
+        <h2>How confident are you in your decision?</h2>
+        <div class="likert-scale">
+            <div class="likert-option">
+                <input type="radio" name="confidence" value="1" id="conf1">
+                <label for="conf1">1<br>Least Confidence</label>
+            </div>
+            <div class="likert-option">
+                <input type="radio" name="confidence" value="2" id="conf2">
+                <label for="conf2">2<br>Slightly Confident</label>
+            </div>
+            <div class="likert-option">
+                <input type="radio" name="confidence" value="3" id="conf3">
+                <label for="conf3">3<br>Moderately Confident</label>
+            </div>
+            <div class="likert-option">
+                <input type="radio" name="confidence" value="4" id="conf4">
+                <label for="conf4">4<br>Significantly Confident</label>
+            </div>
+            <div class="likert-option">
+                <input type="radio" name="confidence" value="5" id="conf5">
+                <label for="conf5">5<br>Fully Confident</label>
+            </div>
+        </div>
+        <div class="error" id="likert-error">Please rate your confidence</div>
+        <button onclick="handleLikertNext()">Next</button>
+    </div>
+
+    <!-- Thank You Page -->
+    <div class="page" id="thank-you">
+        <h2>Thank You! 🎉</h2>
+        <p>Thank you for participating in our research on decision-making under stress.</p>
+        <p>This study aims to understand how time pressure affects decision-making confidence.</p>
+        <button onclick="submitSurvey()">Submit</button>
+    </div>
+
+    <script>
+        let currentQuestion = 0;
+        let currentTask = 1;
+        let timer;
+        const questions = [
+            "What is the capital of India?",
+            "What is the capital of France?",
+            "What is the capital of Japan?",
+            "What is the capital of Brazil?",
+            "What is the capital of Egypt?",
+            "What is the capital of Australia?",
+            "What is the capital of Canada?"
+        ];
+        
+        const options = [
+            ["Mumbai", "Delhi", "Bengaluru", "Kolkata"],
+            ["Lyon", "Paris", "Marseille", "Nice"],
+            ["Osaka", "Kyoto", "Tokyo", "Yokohama"],
+            ["Rio de Janeiro", "São Paulo", "Brasília", "Salvador"],
+            ["Alexandria", "Cairo", "Giza", "Luxor"],
+            ["Sydney", "Melbourne", "Canberra", "Perth"],
+            ["Toronto", "Vancouver", "Montreal", "Ottawa"]
+        ];
+
+        const responses = {
+            demographics: {},
+            task1: [],
+            task2: [],
+            confidence: []
+        };
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+        }
+
+        function hideError(elementId) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.classList.remove('visible');
+        }
+
+        function validateConsent() {
+            const consent = document.getElementById('consent').checked;
+            if (!consent) {
+                showError('consent-error');
+                return;
+            }
+            hideError('consent-error');
+            nextPage('welcome', 'demographics');
+        }
+
+        function validateAndNextDemographics() {
+            const name = document.getElementById('name').value.trim();
+            const age = document.getElementById('age').value;
+            const gender = document.getElementById('gender').value;
+            let isValid = true;
+
+            hideError('name-error');
+            hideError('age-error');
+            hideError('gender-error');
+
+            if (!name) {
+                showError('name-error', 'Name is required');
+                isValid = false;
+            }
+
+            if (!age) {
+                showError('age-error', 'Age is required');
+                isValid = false;
+            } else if (age < 18 || age > 100) {
+                showError('age-error', 'Please enter a valid age between 18 and 100');
+                isValid = false;
+            }
+
+            if (!gender) {
+                showError('gender-error', 'Please select your gender');
+                isValid = false;
+            }
+
+            if (isValid) {
+                responses.demographics = { name, age, gender };
+                nextPage('demographics', 'instructions');
+            }
+        }
+
+        function nextPage(currentPageId, nextPageId) {
+            document.getElementById(currentPageId).classList.remove('active');
+            document.getElementById(nextPageId).classList.add('active');
+        }
+
+        function startSurvey() {
+            currentQuestion = 0;
+            currentTask = 1;
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const template = document.getElementById('question-template');
+            template.classList.add('active');
+            document.getElementById('instructions').classList.remove('active');
+
+            document.getElementById('task-header').textContent = `Task ${currentTask}`;
+            document.getElementById('question-number').textContent = `Question ${currentQuestion + 1}`;
+            document.getElementById('question-text').textContent = questions[currentQuestion];
+
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+            options[currentQuestion].forEach((option, index) => {
+                optionsContainer.innerHTML += `
+                    <div>
+                        <input type="radio" name="answer" value="${option}" id="option${index}" onchange="handleOptionSelect()">
+                        <label for="option${index}">${option}</label>
+                    </div>
+                `;
+            });
+
+            document.getElementById('next-button').disabled = true;
+            hideError('question-error');
+
+            if (currentTask === 2) {
+                startTimer();
+            }
+        }
+
+        function handleOptionSelect() {
+            document.getElementById('next-button').disabled = false;
+            hideError('question-error');
+        }
+
+        function startTimer() {
+            let timeLeft = 30;
+            document.getElementById('timer').textContent = `Time remaining: ${timeLeft}s`;
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = `Time remaining: ${timeLeft}s`;
+                
+                if (timeLeft === 0) {
+                    clearInterval(timer);
+                    const selectedAnswer = document.querySelector('input[name="answer"]:checked');
+                    const answer = selectedAnswer ? selectedAnswer.value : null;
+                    responses.task2.push(answer);
+                    responses.confidence.push(null);
+                    moveToNextQuestion();
+                }
+            }, 1000);
+        }
+
+        function handleNextQuestion() {
+            if (currentTask === 2) {
+                clearInterval(timer);
+            }
+
+            const selectedAnswer = document.querySelector('input[name="answer"]:checked');
+            if (!selectedAnswer) {
+                showError('question-error');
+                return;
+            }
+
+            const answer = selectedAnswer.value;
+            if (currentTask === 1) {
+                responses.task1.push(answer);
+            } else {
+                responses.task2.push(answer);
+            }
+
+            document.getElementById('question-template').classList.remove('active');
+            document.getElementById('likert-template').classList.add('active');
+        }
+
+        function handleLikertNext() {
+            const confidence = document.querySelector('input[name="confidence"]:checked');
+            if (!confidence) {
+                showError('likert-error');
+                return;
+            }
+
+            hideError('likert-error');
+            responses.confidence.push(confidence.value);
+            document.querySelector('input[name="confidence"]:checked').checked = false;
+
+            moveToNextQuestion();
+        }
+
+        function moveToNextQuestion() {
+            currentQuestion++;
+            if (currentQuestion >= questions.length) {
+                if (currentTask === 1) {
+                    currentTask = 2;
+                    currentQuestion = 0;
+                } else {
+                    showThankYou();
+                    return;
+                }
+            }
+            document.getElementById('question-template').classList.remove('active');
+            document.getElementById('likert-template').classList.remove('active');
+            showQuestion();
+        }
+
+        function showThankYou() {
+            document.getElementById('question-template').classList.remove('active');
+            document.getElementById('likert-template').classList.remove('active');
+            document.getElementById('thank-you').classList.add('active');
+        }
+
+        function submitSurvey() {
+            console.log('Survey responses:', responses);
+            alert('Thank you for completing the survey!');
+        }
+    </script>
+</body>
+</html>
