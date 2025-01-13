@@ -440,39 +440,52 @@
             console.log('Survey responses:', responses);
             alert('Thank you for completing the survey!');
         }
-    </script>
-    <script>
-function submitSurvey() {
-    const data = {
-        demographics: responses.demographics,
-        task1: responses.task1,
-        task2: responses.task2,
-        confidence: responses.confidence
-    };
 
-    // Replace with your Google Apps Script Web App URL
-    const sheetsURL = 'https://script.google.com/macros/s/AKfycbw73msOnTtT9nwJtHaKYkpcHRZCvwbYvVSSIzhQdVqaqeOs62ztpH_cEq0QqgqrX_9jFg/exec';
+        
+    function submitSurvey() {
+        const data = {
+            demographics: responses.demographics,
+            task1: responses.task1,
+            task2: responses.task2,
+            confidence: responses.confidence
+        };
 
-    fetch(sheetsURL, {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
+        // Replace 'YOUR_SCRIPT_URL' with your actual Google Apps Script Web App URL
+        const sheetsURL = 'https://script.google.com/macros/s/AKfycbw73msOnTtT9nwJtHaKYkpcHRZCvwbYvVSSIzhQdVqaqeOs62ztpH_cEq0QqgqrX_9jFg/exec';
+
+        // Create a hidden iframe for submission
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = sheetsURL;
+        form.target = 'hidden-iframe';
+
+        // Add data as a hidden input
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'data';
+        input.value = JSON.stringify(data);
+        form.appendChild(input);
+
+        // Create hidden iframe
+        const iframe = document.createElement('iframe');
+        iframe.name = 'hidden-iframe';
+        iframe.style.display = 'none';
+
+        document.body.appendChild(iframe);
+        document.body.appendChild(form);
+
+        // Handle success
+        iframe.onload = function() {
             alert('Thank you! Your responses have been recorded successfully.');
-        } else {
-            alert('There was an error submitting your responses. Please try again.');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('There was an error submitting your responses. Please try again.');
-    });
-}
-</script>
+            document.body.removeChild(form);
+            document.body.removeChild(iframe);
+        };
+
+        // Submit the form
+        form.submit();
+    }
+    
+    </script>
+    
 </body>
 </html>
